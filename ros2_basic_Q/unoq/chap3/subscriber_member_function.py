@@ -2,33 +2,34 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
-from std_msgs.msg import String
+from std_msgs.msg import Bool
 
+import arduino.app_utils as app_utils
 
 class MinimalSubscriber(Node):
 
     def __init__(self):
         super().__init__('minimal_subscriber')
         self.subscription = self.create_subscription(
-            String,
-            'topic',
+            Bool,
+            'led_status',
             self.listener_callback,
             10)
-        self.subscription  # prevent unused variable warning
-
+        
     def listener_callback(self, msg):
-        self.get_logger().info('I heard: "%s"' % msg.data)
-
+        self.get_logger().info('Setting LED to: {msg.data}')
+        app_utils.Bridge.call("set_led_state", msg.data)
 
 def main(args=None):
+    with rclpy.init(args=args):
+    minimal_subscriber = MinimalSubscriber()
     try:
-        with rclpy.init(args=args):
-            minimal_subscriber = MinimalSubscriber()
-
-            rclpy.spin(minimal_subscriber)
+        rclpy.spin(minimal_subscriber)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
-
+    finally:
+		minimal_subscriber.destroy_node()
+		rclpy.try_shutdown()
 
 if __name__ == '__main__':
     main()

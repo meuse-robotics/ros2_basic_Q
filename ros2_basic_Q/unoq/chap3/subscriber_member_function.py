@@ -31,21 +31,18 @@ class MinimalSubscriber(Node):
 
 # メイン関数
 def main(args=None):
-	  # rclpyの初期化。終了時には自動でシャットダウンするようにwith文を使用
-    with rclpy.init(args=args):
-    # MinimalSubscriberインスタンスを生成
-    minimal_subscriber = MinimalSubscriber()
-
+	  
     try:
-        # ノードをスピンさせ、メッセージ受信を待つ
-        rclpy.spin(minimal_subscriber)
+		# rclpyの初期化。終了時には自動でシャットダウンするようにwith文を使用
+    	with rclpy.init(args=args):
+    		# MinimalSubscriberインスタンスを生成
+    		minimal_subscriber = MinimalSubscriber()
+        	# ノードをスピンさせ、メッセージ受信を待つ
+        	rclpy.spin(minimal_subscriber)
     except (KeyboardInterrupt, ExternalShutdownException):
         # Ctrl+Cなどによる終了要求を捕捉して終了
         pass
-	  finally:
-		    minimal_subscriber.destroy_node()
-		    rclpy.try_shutdown()
-
+		
 # スクリプトが直接実行されたときにmain()を呼び出す
 if __name__ == '__main__':
     main()

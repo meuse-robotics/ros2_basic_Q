@@ -1,0 +1,32 @@
+const int ENC_L = 2; 	//D2ピンにENC_Lと名前を付ける
+const int ENC_R = 3; 	//D3ピンにENC_Rと名前を付ける
+volatile int count_L = 0;	//エッジカウント用
+volatile int count_R = 0;
+
+void setup() {
+  	pinMode(LED_BUILTIN, OUTPUT);	//ボード上のLEDを使う
+  	pinMode(ENC_L, INPUT_PULLUP);	//ENC_Lを入力・プルアップ設定
+  	pinMode(ENC_R, INPUT_PULLUP); 	//ENC_Rを入力・プルアップ設定
+  	// ENC_L、ENC_Rの入力変化（立ち上がり/立ち下がり）で割込み設定
+    attachInterrupt(digitalPinToInterrupt(ENC_L), enc_callback_L, CHANGE);
+  	attachInterrupt(digitalPinToInterrupt(ENC_R), enc_callback_R, CHANGE);
+  	Serial.begin(115200);	//シリアル通信設定
+}
+
+void loop() {
+}
+
+//右エンコーダー割込みコールバック関数
+void enc_callback_R() {
+  	count_R += 1;	//カウンターを加算
+  	Serial.print("R = ");
+  	Serial.println(count_R);
+  	digitalWrite(LED_BUILTIN, count_R/2 ? LOW : HIGH);	//LEDを反転
+}
+
+//左エンコーダー割込みコールバック関数
+void enc_callback_L() {
+  	count_L += 1; 	//カウンターを加算
+  	Serial.print("L = ");
+  	Serial.println(count_L);
+}

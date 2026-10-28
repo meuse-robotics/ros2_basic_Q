@@ -18,12 +18,13 @@ class MinimalPublisher(Node):
     self.publisher_.publish(msg) 
     self.get_logger().info('Publishing: "%s"' % msg.data) 
 
-def main(args=None): 
-  rclpy.init(args=args) 
-  minimal_publisher = MinimalPublisher() 
-  rclpy.spin(minimal_publisher)
-  minimal_publisher.destroy_node() 
-  rclpy.shutdown() 
+def main(args=None):
+  try:
+      with rclpy.init(args=args):
+          minimal_publisher = MinimalPublisher()
+          rclpy.spin(minimal_publisher)
+  except (KeyboardInterrupt, ExternalShutdownException):
+      pass
 
 if __name__ == '__main__': 
   main()

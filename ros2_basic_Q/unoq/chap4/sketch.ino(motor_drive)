@@ -1,0 +1,27 @@
+const int MOT_R_1 = 5; 	//D5ピンにMOT_R_1と名前を付ける
+const int MOT_R_2 = 6; 	//D6ピンにMOT_R_2と名前を付ける
+const int MOT_L_1 = 9; 	//D9ピンにMOT_L_1と名前を付ける
+const int MOT_L_2 = 10; 	//D10ピンにMOT_L_2と名前を付ける
+
+void setup() {
+pinMode(MOT_R_1, OUTPUT); 	//出力に設定
+  	pinMode(MOT_R_2, OUTPUT);
+  	pinMode(MOT_L_1, OUTPUT);
+  	pinMode(MOT_L_2, OUTPUT);
+}
+
+void loop() {
+    analogWrite(MOT_R_1, 196); 	//196/256のデューティ比でPWM出力
+  	analogWrite(MOT_R_2, 0); 	//出力しない
+  	analogWrite(MOT_L_1, 196); 	//196/256のデューティ比でPWM出力
+  	analogWrite(MOT_L_2, 0); 	//出力しない
+
+  	delay(5000);
+
+  	analogWrite(MOT_R_1, 0); 	//出力しない
+  	analogWrite(MOT_R_2, 0);
+  	analogWrite(MOT_L_1, 0);
+  	analogWrite(MOT_L_2, 0);
+
+  	delay(1000);
+}

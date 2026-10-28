@@ -1,0 +1,145 @@
+#include <Arduino.h>
+#include <zephyr/kernel.h>
+
+// モーター出力端子
+const int MOT_L_1 = 5;
+const int MOT_L_2 = 6;
+const int MOT_R_1 = 9;
+const int MOT_R_2 = 10;
+
+// エンコーダー入力端子
+const int ENC_L = 2;
+const int ENC_R = 3;
+
+// エンコーダーカウント用
+volatile int count_L = 0;
+volatile int count_R = 0;
+
+// PID制御のパラメータ
+const float DURATION = 0.1f;  // 制御周期
+volatile int prev_count_L = 0;  // 前回カウント
+volatile int prev_count_R = 0;
+volatile float err_prev_L = 0.0f;  // 前回エラー
+volatile float err_prev_R = 0.0f;
+volatile float err_I_L = 0.0f;  // エラー積算
+volatile float err_I_R = 0.0f;
+const float Kp = 20.0f;  // 比例ゲイン
+const float Ki = 100.0f;  // 積分ゲイン
+const float Kd = 0.1f;  // 微分ゲイン
+
+float target_speed_L = 0.5f;  // モーターの目標速度
+float target_speed_R = 0.5f;
+
+struct k_timer motorTimer;	//タイマーオブジェクト
+volatile bool motorControlFlag = false; //割込み発生フラグト
+
+void setup() {
+  	// モーター端子出力設定
+  	pinMode(MOT_L_1, OUTPUT);
+  	pinMode(MOT_L_2, OUTPUT);
+  	pinMode(MOT_R_1, OUTPUT);
+  	pinMode(MOT_R_2, OUTPUT);
+
+  	// エンコーダー端子入力設定
+  	pinMode(ENC_L, INPUT_PULLUP);
+  	pinMode(ENC_R, INPUT_PULLUP);
+  	attachInterrupt(digitalPinToInterrupt(ENC_L), enc_callback_L, CHANGE);
+  	attachInterrupt(digitalPinToInterrupt(ENC_R), enc_callback_R, CHANGE);
+
+    // タイマーを初期化
+    k_timer_init(&motorTimer, motorTimerHandler, NULL);
+    // 100ms周期でスタート
+  	k_timer_start(
+    	&motorTimer,
+    	K_MSEC(100),	// 最初の発生まで100ms
+    	K_MSEC(100)	// 以後100ms周期
+  	);
+    Serial.begin(115200);
+    Bridge.begin();
+    Bridge.provide("set_target_speed", set_target_speed);
+}
+
+void loop() {
+  	if(motorControlFlag){	//タイマー割り込みあり
+    	motorControlFlag = false;
+    	motorControl();	//モーター制御
+  	}
+}
+
+// 左エンコーダーのコールバック関数
+void enc_callback_L() {
+  	count_L += 1;  
+}
+
+// 右エンコーダーのコールバック関数
+void enc_callback_R() {
+   	count_R += 1;  
+}
+
+void motorTimerHandler(struct k_timer *timer){
+  	motorControlFlag = true;
+}
+
+void motorControl() {
+  	// --- 右モーターのPID制御 ---
+  	float speed_R = float(count_R - prev_count_R) / 40.0 / DURATION;
+  	float err_P = target_speed_R - speed_R;
+  	err_I_R += err_P * DURATION;
+  	float err_D = (err_P - err_prev_R) / DURATION;
+  	float duty_R = Kp * err_P + Ki * err_I_R + Kd * err_D;
+ 
+  	duty_R = constrain(duty_R, -255, 255);
+    if(duty_R > 0){
+    	analogWrite(MOT_R_1, int(duty_R));
+    	analogWrite(MOT_R_2, 0);
+  	}else{
+    	analogWrite(MOT_R_1, 0);
+    	analogWrite(MOT_R_2, -int(duty_R));
+  	}
+  	prev_count_R = count_R;
+  	err_prev_R = err_P;
+
+  	// --- 左モーターのPID制御 ---
+  	float speed_L = float(count_L - prev_count_L) / 40.0 / DURATION;
+  	err_P = target_speed_L - speed_L;
+  	err_I_L += err_P * DURATION;
+  	err_D = (err_P - err_prev_L) / DURATION;
+  	float duty_L = Kp * err_P + Ki * err_I_L + Kd * err_D;
+
+	duty_L = constrain(duty_L, -255, 255);
+  	if(duty_L > 0){
+    	analogWrite(MOT_L_1, int(duty_L));
+    	analogWrite(MOT_L_2, 0);
+  	}else{
+    	analogWrite(MOT_L_1, 0);
+    	analogWrite(MOT_L_2, -int(duty_L));
+  	}
+  	prev_count_L = count_L;
+  	err_prev_L = err_P;
+}
+
+
+void set_target_speed(float tgt_R, float tgt_L){
+    target_speed_L = tgt_L;
+  	if(target_speed_L == 0)init_variables_L();
+  	target_speed_R = tgt_R;
+  	if(target_speed_R == 0)init_variables_R();
+}
+
+void init_variables_R(){		//右モーターを停止してサーボをリセット
+  	count_R = 0;
+  	prev_count_R = 0;
+  	err_prev_R = 0.0f;
+  	err_I_R = 0.0f;
+  	analogWrite(MOT_R_1, 0);
+  	analogWrite(MOT_R_2, 0);
+}
+
+void init_variables_L(){		//左モーターを停止してサーボをリセット
+  	count_L = 0;
+  	prev_count_L = 0;
+  	err_prev_L = 0.0f;
+  	err_I_L = 0.0f;
+  	analogWrite(MOT_L_1, 0);
+  	analogWrite(MOT_L_2, 0);
+}

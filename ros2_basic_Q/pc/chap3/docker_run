@@ -1,0 +1,8 @@
+docker run -it \
+  --name ros_lyrical_container \
+  --network host \
+  -v ~/ArduinoApps/subscriber_unoq/src:/workspace/src \
+  -v /var/run/arduino-router.sock:/var/run/arduino-router.sock \
+  --user $(id -u):$(id -g) \
+  ros_lyrical_ws \
+  bash

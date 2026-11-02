@@ -22,7 +22,6 @@ def main(args=None):
     try:
         with rclpy.init(args=args):
             minimal_subscriber = MinimalSubscriber()
-
             rclpy.spin(minimal_subscriber)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass

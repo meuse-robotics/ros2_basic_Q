@@ -3,6 +3,7 @@ docker run -it \
   --network host \
   -v ~/ArduinoApps/subscriber_unoq/src:/workspace/src \
   -v /var/run/arduino-router.sock:/var/run/arduino-router.sock \
+  --group-add $(stat -c '%g' /var/run/arduino-router.sock) \
   --user $(id -u):$(id -g) \
   ros_lyrical_ws \
   bash
